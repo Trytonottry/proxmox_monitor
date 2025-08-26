@@ -4,6 +4,7 @@
 
 ![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange)
 ![License](https://img.shields.io/badge/License-MIT-blue)
+[![Release](https://github.com/Trytonottry/proxmox_monitor/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/Trytonottry/proxmox_monitor/actions/workflows/release.yml)
 
 ## ✨ Особенности
 
