@@ -1,0 +1,68 @@
+groups:
+  - name: proxmox.rules
+    rules:
+      # 🔴 Высокая загрузка CPU на узле
+      - alert: ProxmoxNodeHighCpuUsage
+        expr: proxmox_node_cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая загрузка CPU на Proxmox-узле (выше 80%)"
+          description: "Узел {{ $labels.node }} имеет загрузку CPU {{ $value | printf \"%.2f\" }}% в течение 5 минут."
+
+      # 🔴 Переполнение памяти
+      - alert: ProxmoxNodeHighMemoryUsage
+        expr: |
+          (proxmox_node_memory_usage_bytes / (
+            proxmox_node_memory_usage_bytes + 
+            (avg_over_time(proxmox_node_memory_usage_bytes[5m]) > 0)
+          )) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование памяти на Proxmox-узле"
+          description: "Узел {{ $labels.node }} использует более 85% RAM. Текущее использование: {{ $value | printf \"%.2f\" }}%."
+
+      # 🔴 Виртуальная машина остановлена
+      - alert: ProxmoxVmDown
+        expr: proxmox_vm_status == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Виртуальная машина остановлена"
+          description: "VM {{ $labels.name }} (VMID: {{ $labels.vmid }}) на узле {{ $labels.node }} остановлена."
+
+      # 🟡 Виртуальная машина перезапускается часто
+      - alert: ProxmoxVmFrequentRestarts
+        expr: changes(proxmox_vm_status[1h]) > 3
+        for: 1s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Частые перезапуски ВМ"
+          description: "ВМ {{ $labels.name }} (VMID: {{ $labels.vmid }}) перезапускалась более 3 раз за последний час."
+
+      # 🔴 Узел исчез из метрик (возможно, недоступен)
+      - alert: ProxmoxNodeMissingMetrics
+        expr: |
+          absent(up{job="proxmox"} or proxmox_node_cpu_usage_percent offset 5m)
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Пропали метрики с Proxmox-узла"
+          description: "Метрики с узла {{ $labels.node }} не поступают более 2 минут. Возможно, узел недоступен."
+
+      # 🔴 Нагрузка на узле растёт слишком быстро
+      - alert: ProxmoxNodeCpuSpiking
+        expr: |
+          rate(proxmox_node_cpu_usage_percent[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Резкий рост CPU на узле"
+          description: "Загрузка CPU на узле {{ $labels.node }} растёт быстрее 10% в минуту. Текущая скорость: {{ $value | printf \"%.2f\" }}%/мин."

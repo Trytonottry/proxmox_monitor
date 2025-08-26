@@ -1,0 +1,31 @@
+image:
+  repository: trytonottry/proxmox-exporter
+  tag: latest
+  pullPolicy: IfNotPresent
+
+proxmox:
+  host: https://proxmox.example.com:8006
+  user: monitor@pve
+  password: yourpassword
+
+service:
+  port: 9090
+  targetPort: 9090
+
+resources: {}
+#  limits:
+#    cpu: 100m
+#    memory: 128Mi
+#  requests:
+#    cpu: 50m
+#    memory: 64Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+serviceMonitor:
+  enabled: false
+  namespace: monitoring
+  interval: 30s
+  scrapeTimeout: 10s

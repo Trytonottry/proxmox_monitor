@@ -1,0 +1,14 @@
+apiVersion: v2
+name: proxmox-exporter
+version: 0.1.0
+appVersion: "0.1.0"
+description: Helm chart for Proxmox Exporter
+type: application
+keywords:
+  - proxmox
+  - monitoring
+  - prometheus
+  - rust
+maintainers:
+  - name: Trytonottry
+    email: try2nottry@gmail.com

@@ -1,0 +1,18 @@
+{{- if .Values.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}-proxmox-exporter
+  namespace: {{ .Values.serviceMonitor.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $.Release.Name }}-proxmox-exporter
+  endpoints:
+    - port: web
+      interval: {{ .Values.serviceMonitor.interval }}
+      scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+{{- end }}
