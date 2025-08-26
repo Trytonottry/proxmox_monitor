@@ -1,4 +1,3 @@
-# .github/workflows/release.yml
 name: Release
 
 on:
@@ -48,40 +47,39 @@ jobs:
           command: build
           args: --release --target ${{ matrix.target }}
 
-      - name: Copy binary to dist
+      - name: Copy binary
         run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/${{ matrix.bin_name }} dist/
+          mkdir -p target/dist
+          cp target/${{ matrix.target }}/release/${{ matrix.bin_name }} target/dist/
         if: matrix.os != 'windows-latest'
 
-      - name: Copy binary to dist (Windows)
+      - name: Copy binary (Windows)
         run: |
-          mkdir dist
-          Move-Item target/${{ matrix.target }}/release/${{ matrix.bin_name }} dist/
+          mkdir target\dist
+          Copy-Item target\${{ matrix.target }}\release\${{ matrix.bin_name }} target\dist\
         if: matrix.os == 'windows-latest'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          path: dist/
-          retention-days: 7
+          path: target/dist/
+          name: bin-${{ matrix.target }}
           if-no-files-found: error
 
-  # Собираем все артефакты и публикуем релиз
-  upload-release:
+  publish-release:
     needs: release
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # нужно для создания релиза
+      contents: write
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Flatten and rename binaries
+      - name: Flatten binaries
         run: |
-          mkdir -p release
+          mkdir release
           find artifacts -name "proxmox_monitor*" -exec cp {} release/ \;
           cd release
           mv proxmox_monitor* ../proxmox-monitor-linux-x64 2>/dev/null || true
@@ -92,46 +90,18 @@ jobs:
 
       - name: Create ZIP
         run: |
-          zip proxmox-monitor-v${{ github.ref_name }}.zip \
+          zip -j proxmox-monitor-v${{ github.ref_name }}.zip \
             proxmox-monitor-linux-x64 \
             proxmox-monitor-macos-x64 \
             proxmox-monitor-macos-arm64 \
-            proxmox-monitor-windows-x64.exe || true
+            proxmox-monitor-windows-x64.exe
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref_name }}
-          body: |
-            🎉 Первый стабильный релиз `proxmox-monitor`!
-
-            ## ✨ Что нового
-            - CLI для мониторинга Proxmox VE
-            - Prometheus Exporter
-            - Поддержка Docker и Helm
-            - Grafana Dashboard
-            - Alerting Rules
-            - Полная документация
-
-            ## 📦 Скачать
-            Артефакты:
-            - `proxmox-monitor-linux-x64`
-            - `proxmox-monitor-macos-x64`
-            - `proxmox-monitor-macos-arm64`
-            - `proxmox-monitor-windows-x64.exe`
-
-            Или установи через Cargo:
-            ```bash
-            cargo install --git https://github.com/Trytonottry/proxmox_monitor
-            ```
-
-            ## 📚 Документация
-            👉 https://trytonottry.github.io/proxmox-monitor/
-
-            ## 🐳 Docker
-            ```bash
-            docker run ghcr.io/trytonottry/proxmox-monitor:latest --help
-            ```
-          files: proxmox-monitor-v${{ github.ref_name }}.zip
-          generate_release_notes: false
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ github.ref_name }} \
+            --title "Release v${{ github.ref_name }}" \
+            --notes "See assets for binaries." \
+            --draft=false \
+            proxmox-monitor-v${{ github.ref_name }}.zip
